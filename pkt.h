@@ -2,13 +2,16 @@
 #define PKT_H
 
 
-#define unsigned char  u8_t
-#define unsigned short u16_t
-#define unsigned int   u32_t
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <sys/ioctl.h>
 
 //layout two protocol
 #include <net/ethernet.h> //ethernet header
@@ -29,6 +32,7 @@
 //such as telnet、http、 dns、ftp、ssl and so on.
 
 
+#define BUFF_SIZE 4*1024
 
 #if 0
 //ethernet header 14bytes
@@ -41,3 +45,7 @@ struct ethernet
 
 //ip
 #endif
+
+
+#endif 
+
