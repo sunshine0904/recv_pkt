@@ -14,7 +14,7 @@ int main()
 	u8_t *buff = (u8_t *)malloc(BUFF_SIZE);
 	u32_t i = 0,ret = 0;	
 
-	raw_sock = socket(PF_PACKET,SOCK_RAW,IPPROTO_IP);
+	raw_sock = socket(PF_PACKET,SOCK_RAW,htons(ETH_P_ALL));
 	printf("raw_socket:%d\n",raw_sock);
 	if(raw_sock == 0)
 	{
@@ -22,6 +22,7 @@ int main()
 		return -1;
 	}
 
+#if 0
 	struct ifreq ifr;
 	strcpy(ifr.ifr_name,"wlan0");
 	ifr.ifr_flags = IFF_UP|IFF_PROMISC|IFF_BROADCAST|IFF_RUNNING;
@@ -31,12 +32,11 @@ int main()
 		return -1;
 	}
 
-
+#endif
 
 	while(1)
 	{
-		printf("hahhahh\n");
-		ret = recvfrom(raw_sock,buff,BUFF_SIZE,0,(struct sockaddr *)&recvaddr,&len);	
+		ret = recvfrom(raw_sock,buff,BUFF_SIZE,0,NULL,NULL);	
 		if(ret < 0)
 		{
 			printf("recv error\n");
