@@ -9,4 +9,4 @@ recv:pkt.h recv_pkt.c
 .PHONY:clean
 
 clean:
-	-rm $(OBJS) *.gch -rf
+	-rm $(OBJS) *.gch 
