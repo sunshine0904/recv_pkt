@@ -10,8 +10,14 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <net/if.h>
+#include <net/ethernet.h>
 #include <netinet/in.h>
+#include <netpacket/packet.h>
 #include <sys/ioctl.h>
+
+
+
+
 
 //layout two protocol
 #include <net/ethernet.h> //ethernet header
