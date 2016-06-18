@@ -1,15 +1,20 @@
 #include "pkt.h"
 
-#if 1
 #define u8_t  unsigned char
 #define u16_t unsigned short
 #define u32_t unsigned int
-#endif
 
+#define print_addr(addr) printf("%d.%d.%d.%d\n", \
+  ((addr & 0xff000000) >> 24), ((addr & 0x00ff0000) >> 16), \
+  ((addr & 0x0000ff00) >> 8),  (addr & 0x000000ff))
 
 u32_t creat_rawsocket();
 u32_t bind_socket_dev(u32_t socket,u8_t *device);
 u32_t analysis_data(u8_t *data);
+void ipv4_pkt_process(u8_t *buff);
+void ipv6_pkt_process(u8_t *buff);
+void arp_pkt_process(u8_t *buff);
+void revarp_pkt_process(u8_t *buff);
 
 
 u32_t main(int argc,char **argv)
@@ -96,19 +101,25 @@ u32_t analysis_data(u8_t *data)
 	}
 	printf("\n");
 	printf("eth_type:%#06x\n",htons(ethhdr->ether_type));
-	
+	data += sizeof(struct ether_header);
+
+
 	switch(htons(ethhdr->ether_type))
 	{
 		case ETHERTYPE_IP:
+			ipv4_pkt_process(data);
 			printf("it is ipv4 packet\n");
 			break;
 		case ETHERTYPE_IPV6:
+			ipv6_pkt_process(data);
 			printf("it is ipv6 packet\n");
 			break;
 		case ETHERTYPE_ARP:
+			arp_pkt_process(data);
 			printf("it is arp packet\n");
 			break;
 		case ETHERTYPE_REVARP:
+			revarp_pkt_process(data);
 			printf("it is revarp packet\n");
 			break;
 		default:
@@ -116,3 +127,47 @@ u32_t analysis_data(u8_t *data)
 			break;
 	}
 }
+void ipv4_pkt_process(u8_t *buff)
+{
+	printf("++++++ipv4 header++++++\n");
+	struct iphdr *iph = buff;
+	printf("\n");
+	printf(" _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _");
+	printf("\n");
+	printf("|version | iphdr_len | Tos | total len  |");
+	printf("\n");
+	printf("|");
+	printf("    %d        %d        %d       %d     ",iph->version,iph->ihl,iph->tos,iph->tot_len);
+	printf("|\n");
+
+	printf("|  identity      |      fragment offset |");
+	printf("\n");
+	printf("|  %d         |            %d           |",iph->id,iph->frag_off);
+	printf("\n");
+
+	printf("|ttl   |    protocol  |   check         |\n");
+	printf("\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n");
+	printf("| %d   |        %d      |    %d         |",iph->ttl,iph->protocol,iph->check);
+	printf("\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n");
+
+	printf("|              src_ip                   |\n");
+	printf("\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n");
+	print_addr(htonl(iph->saddr));
+	printf("|              dst_ip                   |\n");
+	printf("_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n");
+	print_addr(htonl(iph->daddr));
+}
+void ipv6_pkt_process(u8_t *buff)
+{
+	
+}
+void arp_pkt_process(u8_t *buff)
+{
+	
+}
+void revarp_pkt_process(u8_t *buff)
+{
+	
+}
+
+
