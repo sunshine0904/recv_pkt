@@ -4,7 +4,7 @@
 #define u16_t unsigned short
 #define u32_t unsigned int
 
-#define print_addr(addr) printf("%d.%d.%d.%d\n", \
+#define print_addr(addr) printf("            %d.%d.%d.%d    \n", \
   ((addr & 0xff000000) >> 24), ((addr & 0x00ff0000) >> 16), \
   ((addr & 0x0000ff00) >> 8),  (addr & 0x000000ff))
 
@@ -131,31 +131,26 @@ void ipv4_pkt_process(u8_t *buff)
 {
 	printf("++++++ipv4 header++++++\n");
 	struct iphdr *iph = buff;
-	printf("\n");
 	printf(" _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _");
 	printf("\n");
 	printf("|version | iphdr_len | Tos | total len  |");
 	printf("\n");
-	printf("|");
 	printf("    %d        %d        %d       %d     ",iph->version,iph->ihl,iph->tos,iph->tot_len);
-	printf("|\n");
-
+	printf("\n");
 	printf("|  identity      |      fragment offset |");
 	printf("\n");
-	printf("|  %d         |            %d           |",iph->id,iph->frag_off);
+	printf("     %d                       %d        ",iph->id,iph->frag_off);
+
 	printf("\n");
+	printf("|   ttl   |    protocol  |   check      |\n");
+	printf("     %d           %d           %d          ",iph->ttl,iph->protocol,iph->check);
 
-	printf("|ttl   |    protocol  |   check         |\n");
-	printf("\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n");
-	printf("| %d   |        %d      |    %d         |",iph->ttl,iph->protocol,iph->check);
-	printf("\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n");
-
+	printf("\n");
 	printf("|              src_ip                   |\n");
-	printf("\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n");
 	print_addr(htonl(iph->saddr));
 	printf("|              dst_ip                   |\n");
-	printf("_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n");
 	print_addr(htonl(iph->daddr));
+	printf("|---------------------------------------|\n");
 }
 void ipv6_pkt_process(u8_t *buff)
 {
