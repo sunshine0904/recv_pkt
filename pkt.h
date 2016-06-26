@@ -40,17 +40,8 @@
 
 #define BUFF_SIZE 4*1024
 
-#if 0
-//ethernet header 14bytes
-struct ethernet
-{
-	u8_t  smac[6];
-	u8_t  dmac[6];
-	u8_t  type[2];
-}
-
-//ip
-#endif
+#define IP_TCP    6
+#define IP_UDP    17    
 
 
 #endif 

@@ -4,7 +4,7 @@
 #define u16_t unsigned short
 #define u32_t unsigned int
 
-#define print_addr(addr) printf("            %d.%d.%d.%d    \n", \
+#define print_addr(addr) printf("            %u.%u.%u.%u    \n", \
   ((addr & 0xff000000) >> 24), ((addr & 0x00ff0000) >> 16), \
   ((addr & 0x0000ff00) >> 8),  (addr & 0x000000ff))
 
@@ -68,7 +68,7 @@ u32_t creat_rawsocket()
 u32_t bind_socket_dev(u32_t socket,u8_t *device)
 {
 	u32_t index = if_nametoindex(device);
-	printf("device:%s index:%d\n",device,index);
+	printf("device:%s index:%u\n",device,index);
 	struct sockaddr_ll sll;
 	memset(&sll,0,sizeof(struct sockaddr_ll));
 	sll.sll_family = PF_PACKET;
@@ -86,21 +86,22 @@ u32_t analysis_data(u8_t *data)
 	//display ether header
 	u32_t i = 0;
 	struct ether_header *ethhdr = data;;
-	printf("\n++++ether header++++\n");
-	printf("eth_src_mac:");
+	printf("\n _ _ _ _ _ _ _ _ ETH II_ _ _ _ _ _ _ _ _");
+	printf("\n|             eth_src_mac               |\n");
+	printf("          ");
 	for(i = 0;i<6;i++)
 	{
-		printf("%02x ",ethhdr->ether_shost[i]);
+		printf("%02x:",ethhdr->ether_shost[i]);
 	}
-	//printf("\n");
-	printf("    ");
-	printf("eth_dst_mac:");
+	printf("\n|             eth_dst_mac               |\n");
+	printf("          ");
 	for(i = 0;i<6;i++)
 	{
-		printf("%02x ",ethhdr->ether_dhost[i]);
+		printf("%02x:",ethhdr->ether_dhost[i]);
 	}
-	printf("\n");
-	printf("eth_type:%#06x\n",htons(ethhdr->ether_type));
+	printf("\n|               eth_type                |\n");
+	printf("                %#06x",htons(ethhdr->ether_type));
+	printf("\n|---------------------------------------|\n");
 	data += sizeof(struct ether_header);
 
 
@@ -108,7 +109,6 @@ u32_t analysis_data(u8_t *data)
 	{
 		case ETHERTYPE_IP:
 			ipv4_pkt_process(data);
-			printf("it is ipv4 packet\n");
 			break;
 		case ETHERTYPE_IPV6:
 			ipv6_pkt_process(data);
@@ -129,21 +129,21 @@ u32_t analysis_data(u8_t *data)
 }
 void ipv4_pkt_process(u8_t *buff)
 {
-	printf("++++++ipv4 header++++++\n");
+	int i = 0;
 	struct iphdr *iph = buff;
-	printf(" _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _");
+	printf("  _ _ _ _ _ _ _ _IPv4 HDR _ _  _ _ _ _ _");
 	printf("\n");
 	printf("|version | iphdr_len | Tos | total len  |");
 	printf("\n");
-	printf("    %d        %d        %d       %d     ",iph->version,iph->ihl,iph->tos,iph->tot_len);
+	printf("    %u        %u        %u       %u     ",iph->version,iph->ihl,iph->tos,ntohs(iph->tot_len));
 	printf("\n");
 	printf("|  identity      |      fragment offset |");
 	printf("\n");
-	printf("     %d                       %d        ",iph->id,iph->frag_off);
+	printf("     %u                       %u        ",ntohs(iph->id),iph->frag_off);
 
 	printf("\n");
 	printf("|   ttl   |    protocol  |   check      |\n");
-	printf("     %d           %d           %d          ",iph->ttl,iph->protocol,iph->check);
+	printf("     %u           %u           %u          ",iph->ttl,iph->protocol,ntohs(iph->check));
 
 	printf("\n");
 	printf("|              src_ip                   |\n");
@@ -151,6 +151,21 @@ void ipv4_pkt_process(u8_t *buff)
 	printf("|              dst_ip                   |\n");
 	print_addr(htonl(iph->daddr));
 	printf("|---------------------------------------|\n");
+	switch(iph->protocol)
+	{
+		case IP_TCP:
+			tcp_pkt_process(buff + sizeof(struct iphdr));
+			break;
+		case IP_UDP:
+			udp_pkt_process(buff + sizeof(struct udphdr));
+			break;
+		default:
+			printf("unknown protocoli! show all data:\n");
+			for(i = 0;i<ntohs(iph->tot_len) - ntohs(iph->ihl);i++)
+			{
+				printf("%02x ",(buff + sizeof(struct iphdr))[i]);
+			}
+	}
 }
 void ipv6_pkt_process(u8_t *buff)
 {
@@ -165,4 +180,28 @@ void revarp_pkt_process(u8_t *buff)
 	
 }
 
+void tcp_pkt_process(u8_t *buff)
+{
+	struct tcphdr *tcp_hdr = buff;
+	printf("\n _ _ _ _ _ _ _ _TCP HDR _ _  _ _ _ _ _");
+	printf("\n|        src port    |      dst port  |\n");
+	printf(   "         %u             %u",ntohs(tcp_hdr->source),ntohs(tcp_hdr->dest));
+	printf("\n|                seq number           |\n");
+	printf(   "                  %u",ntohl(tcp_hdr->seq));
+	printf("\n|               ack seq number        |\n");
+	printf(   "                  %u",ntohl(tcp_hdr->ack_seq));
+	printf("\n|HDR_LEN|R|U|A|P|R|S|F|     window    |\n");
+	printf(  "     %u %u %u %u %u %u %u %u        %u",tcp_hdr->doff,tcp_hdr->res1,tcp_hdr->urg,tcp_hdr->ack,tcp_hdr->psh,tcp_hdr->rst,tcp_hdr->syn,tcp_hdr->fin,tcp_hdr->window);
+	printf("\n|-------------------------------------|\n");
 
+}
+void udp_pkt_process(u8_t *buff)
+{
+	struct udphdr *udp_hdr = buff;
+	printf("\n _ _ _ _ _ _ _ _UDP HDR _ _  _ _ _ _ _");
+	printf("\n|        src port    |      dst port  |\n");
+	printf(   "         %u             %u",ntohs(udp_hdr->source),ntohs(udp_hdr->dest));
+	printf("\n|           len      |        check   |\n");
+	printf(   "           %u                 %u    ",ntohs(udp_hdr->len),ntohs(udp_hdr->check));
+	printf("\n|-------------------------------------|\n");
+}
