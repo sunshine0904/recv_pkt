@@ -8,6 +8,8 @@
   ((addr & 0xff000000) >> 24), ((addr & 0x00ff0000) >> 16), \
   ((addr & 0x0000ff00) >> 8),  (addr & 0x000000ff))
 
+
+
 u32_t creat_rawsocket();
 u32_t bind_socket_dev(u32_t socket,u8_t *device);
 u32_t analysis_data(u8_t *data);
@@ -154,14 +156,14 @@ void ipv4_pkt_process(u8_t *buff)
 	switch(iph->protocol)
 	{
 		case IP_TCP:
-			tcp_pkt_process(buff + sizeof(struct iphdr));
+			tcp_pkt_process(buff + sizeof(struct iphdr),ntohs(iph->tot_len) - 4 * (iph->ihl));
 			break;
 		case IP_UDP:
-			udp_pkt_process(buff + sizeof(struct udphdr));
+			udp_pkt_process(buff + sizeof(struct udphdr),ntohs(iph->tot_len) - 4 * (iph->ihl));
 			break;
 		default:
 			printf("unknown protocoli! show all data:\n");
-			for(i = 0;i<ntohs(iph->tot_len) - ntohs(iph->ihl);i++)
+			for(i = 0;i<ntohs(iph->tot_len) - 4 * (iph->ihl);i++)
 			{
 				printf("%02x ",(buff + sizeof(struct iphdr))[i]);
 			}
@@ -169,6 +171,23 @@ void ipv4_pkt_process(u8_t *buff)
 }
 void ipv6_pkt_process(u8_t *buff)
 {
+	//printf("in ipv6_pkt_process\n");
+	int i = 0;
+	struct ipv6hdr *ipv6_hdr = buff;
+	printf("\n _ _ _ _ _ _ _ _IPV6 HDR _ _  _ _ _ _ _");
+	printf("\n|     version   priority|    folw_lbl  |");
+	printf("\n        %d        %d         %d",ipv6_hdr->version,ipv6_hdr->priority,ipv6_hdr->flow_lbl[0]<<16 | ipv6_hdr->flow_lbl[1]<<8 | ipv6_hdr->flow_lbl[2]);
+	printf("\n|     payload_len  | nexthdr  hop_limit|");	
+	printf("\n      %d               %d   %d",ntohs(ipv6_hdr->payload_len),ipv6_hdr->nexthdr,ipv6_hdr->hop_limit);
+	printf("\n|              src_ip                   |\n");
+	//print_addr6((ipv6_hdr->saddr));
+	for(i = 0;i<16;i++)
+		printf("%02x:",(&(ipv6_hdr->saddr))[i]);
+	printf("\n|              dst_ip                   |\n");
+	//print_addr6((ipv6_hdr->daddr));
+	for(i = 0;i<16;i++)
+		printf("%02x:",(&(ipv6_hdr->daddr))[i]);
+	printf("\n|---------------------------------------|\n");
 	
 }
 void arp_pkt_process(u8_t *buff)
@@ -180,8 +199,9 @@ void revarp_pkt_process(u8_t *buff)
 	
 }
 
-void tcp_pkt_process(u8_t *buff)
+void tcp_pkt_process(u8_t *buff,u32_t payload_len)
 {
+	//printf("in tcp_process payload_len:%d",payload_len);
 	struct tcphdr *tcp_hdr = buff;
 	printf("\n _ _ _ _ _ _ _ _TCP HDR _ _  _ _ _ _ _");
 	printf("\n|        src port    |      dst port  |\n");
@@ -193,10 +213,12 @@ void tcp_pkt_process(u8_t *buff)
 	printf("\n|HDR_LEN|R|U|A|P|R|S|F|     window    |\n");
 	printf(  "     %u %u %u %u %u %u %u %u        %u",tcp_hdr->doff,tcp_hdr->res1,tcp_hdr->urg,tcp_hdr->ack,tcp_hdr->psh,tcp_hdr->rst,tcp_hdr->syn,tcp_hdr->fin,tcp_hdr->window);
 	printf("\n|-------------------------------------|\n");
+	print_payload(tcp_hdr + sizeof(tcp_hdr),payload_len - sizeof(struct tcphdr));
 
 }
-void udp_pkt_process(u8_t *buff)
+void udp_pkt_process(u8_t *buff,u32_t payload_len)
 {
+	//printf("in udp_pocess payload_len:%d\n",payload_len);
 	struct udphdr *udp_hdr = buff;
 	printf("\n _ _ _ _ _ _ _ _UDP HDR _ _  _ _ _ _ _");
 	printf("\n|        src port    |      dst port  |\n");
@@ -204,4 +226,21 @@ void udp_pkt_process(u8_t *buff)
 	printf("\n|           len      |        check   |\n");
 	printf(   "           %u                 %u    ",ntohs(udp_hdr->len),ntohs(udp_hdr->check));
 	printf("\n|-------------------------------------|\n");
+	print_payload(udp_hdr + sizeof(udp_hdr),payload_len - sizeof(struct udphdr));
+}
+void print_payload(u8_t *buff,u32_t payload_len)
+{
+	printf("payload_len:%d\n",payload_len);
+	u8_t *payload = buff;
+	u32_t i = 0;
+	for(i = 0;i < payload_len;i++)
+	{
+		printf("%02x ",payload[i]);
+		if((i+1) / 10!=0 && (i+1) % 10 == 0)
+		{
+			printf("\n");
+		}
+	}
+	printf("\n");
+	
 }
